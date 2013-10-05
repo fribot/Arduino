@@ -240,6 +240,7 @@ void nothing_response(void);
 char gethex(void);
 void puthex(char);
 void flash_led(uint8_t);
+void inline cleanup(void);
 
 /* some variables */
 union address_union {
@@ -284,8 +285,9 @@ int main(void)
 	WDTCSR = 0;
 
 	// Check if the WDT was used to reset, in which case we dont bootload and skip straight to the code. woot.
-	if (! (ch &  _BV(EXTRF))) // if its a not an external reset...
+	if (! (ch &  _BV(EXTRF))) { // if its a not an external reset...
 		app_start();  // skip bootloader
+	}
 #else
 	asm volatile("nop\n\t");
 #endif
@@ -347,6 +349,10 @@ int main(void)
 	}
 #endif
 
+#ifdef FRIBOT
+ 	DDRD  |= _BV(DDD2);
+ 	PORTD |= _BV(PORTD2);
+#endif
 
 	/* initialize UART(s) depending on CPU defined */
 #if defined(__AVR_ATmega128__) || defined(__AVR_ATmega1280__)
@@ -458,8 +464,10 @@ int main(void)
 			putch('P');
 			putch(0x10);
 		} else {
-			if (++error_count == MAX_ERROR_COUNT)
+			if (++error_count == MAX_ERROR_COUNT) {
+				cleanup();
 				app_start();
+			}
 		}
 	}
 
@@ -580,7 +588,7 @@ int main(void)
 				/* if ((length.byte[0] & 0x01) == 0x01) length.word++;	//Even up an odd number of bytes */
 				if ((length.byte[0] & 0x01)) length.word++;	//Even up an odd number of bytes
 				cli();					//Disable interrupts, just to be sure
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__)
+#if defined(EEPE)
 				while(bit_is_set(EECR,EEPE));			//Wait for previous EEPROM writes to complete
 #else
 				while(bit_is_set(EECR,EEWE));			//Wait for previous EEPROM writes to complete
@@ -691,8 +699,10 @@ int main(void)
 			putch(0x14);
 			putch(0x10);
 		} else {
-			if (++error_count == MAX_ERROR_COUNT)
+			if (++error_count == MAX_ERROR_COUNT) {
+				cleanup();
 				app_start();
+			}
 		}		
 	}
 
@@ -746,8 +756,10 @@ int main(void)
 			putch(SIG3);
 			putch(0x10);
 		} else {
-			if (++error_count == MAX_ERROR_COUNT)
+			if (++error_count == MAX_ERROR_COUNT) {
+				cleanup();
 				app_start();
+			}
 		}
 	}
 
@@ -860,6 +872,7 @@ int main(void)
 #endif
 
 				else if(ch == 'j') {
+					cleanup();
 					app_start();
 				}
 
@@ -871,6 +884,7 @@ int main(void)
 	/* end of monitor */
 #endif
 	else if (++error_count == MAX_ERROR_COUNT) {
+		cleanup();
 		app_start();
 	}
 	} /* end of forever loop */
@@ -948,19 +962,23 @@ char getch(void)
 			/* 20060803 DojoCorp:: Addon coming from the previous Bootloader*/               
 			/* HACKME:: here is a good place to count times*/
 			count++;
-			if (count > MAX_TIME_COUNT)
+			if (count > MAX_TIME_COUNT) {
+				cleanup();
 				app_start();
 			}
-
-			return UDR0;
 		}
+
+		return UDR0;
+	}
 	else if(bootuart == 2) {
 		while(!(UCSR1A & _BV(RXC1))) {
 			/* 20060803 DojoCorp:: Addon coming from the previous Bootloader*/               
 			/* HACKME:: here is a good place to count times*/
 			count++;
-			if (count > MAX_TIME_COUNT)
+			if (count > MAX_TIME_COUNT) {
+				cleanup();
 				app_start();
+			}
 		}
 
 		return UDR1;
@@ -972,8 +990,10 @@ char getch(void)
 		/* 20060803 DojoCorp:: Addon coming from the previous Bootloader*/               
 		/* HACKME:: here is a good place to count times*/
 		count++;
-		if (count > MAX_TIME_COUNT)
+		if (count > MAX_TIME_COUNT) {
+			cleanup();
 			app_start();
+		}
 	}
 	return UDR0;
 #else
@@ -983,8 +1003,10 @@ char getch(void)
 		/* 20060803 DojoCorp:: Addon coming from the previous Bootloader*/               
 		/* HACKME:: here is a good place to count times*/
 		count++;
-		if (count > MAX_TIME_COUNT)
+		if (count > MAX_TIME_COUNT) {
+			cleanup();
 			app_start();
+		}
 	}
 	return UDR;
 #endif
@@ -1023,8 +1045,11 @@ void byte_response(uint8_t val)
 		putch(val);
 		putch(0x10);
 	} else {
-		if (++error_count == MAX_ERROR_COUNT)
+		if (++error_count == MAX_ERROR_COUNT) {
+			cleanup();
 			app_start();
+		}
+
 	}
 }
 
@@ -1035,8 +1060,10 @@ void nothing_response(void)
 		putch(0x14);
 		putch(0x10);
 	} else {
-		if (++error_count == MAX_ERROR_COUNT)
+		if (++error_count == MAX_ERROR_COUNT) {
+			cleanup();
 			app_start();
+		}
 	}
 }
 
@@ -1050,5 +1077,11 @@ void flash_led(uint8_t count)
 	}
 }
 
+void inline cleanup(void)
+{
+	#ifdef FRIBOT
+ 		PORTD &= ~_BV(PORTD2);
+	#endif	
+}
 
 /* end of file ATmegaBOOT.c */

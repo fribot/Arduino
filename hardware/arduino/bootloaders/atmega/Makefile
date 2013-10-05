@@ -21,7 +21,11 @@ PROGRAM    = ATmegaBOOT_168
 
 # enter the parameters for the avrdude isp tool
 ISPTOOL	   = stk500v2
-ISPPORT	   = usb
+#ISPTOOL	   = stk500
+
+#ISPPORT	   = usb
+ISPPORT	   = /dev/cu.usbserial-A9006kzn
+
 ISPSPEED   = -b 115200
 
 MCU_TARGET = atmega168
@@ -49,7 +53,7 @@ STK500-2 = $(STK500) -d$(MCU_TARGET) -ms -q -lCF -LCF -cUSB -I200kHz -s -wt
 
 
 OBJ        = $(PROGRAM).o
-OPTIMIZE   = -O2
+OPTIMIZE   = -O
 
 DEFS       = 
 LIBS       =
@@ -165,6 +169,21 @@ atmega328_isp: HFUSE = DA
 atmega328_isp: LFUSE = FF
 atmega328_isp: EFUSE = 05
 atmega328_isp: isp
+
+atmega328_fribot: TARGET = atmega328
+atmega328_fribot: MCU_TARGET = atmega328p
+atmega328_fribot: CFLAGS += '-DMAX_TIME_COUNT=F_CPU>>4' '-DNUM_LED_FLASHES=1' -DFRIBOT=1 -DBAUD_RATE=57600
+atmega328_fribot: AVR_FREQ = 16000000L 
+atmega328_fribot: LDSECTION  = --section-start=.text=0x7800
+atmega328_fribot: $(PROGRAM)_atmega328_fribot.hex
+
+atmega328_fribot_isp: atmega328_fribot
+atmega328_fribot_isp: TARGET = atmega328_fribot
+atmega328_fribot_isp: MCU_TARGET = atmega328p
+atmega328_fribot_isp: HFUSE = DA
+atmega328_fribot_isp: LFUSE = FF
+atmega328_fribot_isp: EFUSE = 05
+atmega328_fribot_isp: isp
 
 atmega328_pro8: TARGET = atmega328_pro_8MHz
 atmega328_pro8: MCU_TARGET = atmega328p
