@@ -21,11 +21,7 @@ PROGRAM    = ATmegaBOOT_168
 
 # enter the parameters for the avrdude isp tool
 ISPTOOL	   = stk500v2
-#ISPTOOL	   = stk500
-
-#ISPPORT	   = usb
-ISPPORT	   = /dev/cu.usbserial-A9006kzn
-
+ISPPORT	   = usb
 ISPSPEED   = -b 115200
 
 MCU_TARGET = atmega168
